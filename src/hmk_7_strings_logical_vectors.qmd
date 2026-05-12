@@ -29,8 +29,7 @@ You will work with a Google Forms CSV export from our in-class graphical percept
 
 ```{r}
 library(tidyverse)
-
-csv_path <- "../data/handb_ptest.csv"   # <-- update if needed
+csv_path <- "data/handb_ptest.csv"   # <-- update if needed
 ```
 
 ------------------------------------------------------------------------
@@ -40,7 +39,10 @@ csv_path <- "../data/handb_ptest.csv"   # <-- update if needed
 **Task:** Read the CSV into an object called `raw`, then preview it.
 
 ```{r}
-# YOUR CODE HERE
+library(readr)
+raw <- read_csv("../data/handb_ptest.csv")
+View(raw)
+
 ```
 
 ------------------------------------------------------------------------
@@ -65,7 +67,27 @@ In the raw Google Forms export, the response columns have long names that includ
 **Task D:** Make a **box plot** of `percent` by `chart_type` (no log transform).
 
 ```{r}
-# YOUR CODE HERE
+#reorganize columns
+mydf <- raw |>
+ pivot_longer(
+  cols = -Timestamp,
+  names_to = c(".value","chart_type"),
+  names_pattern = "(.*?)(\\d+)"
+) 
+
+mydf2 <- mydf |>
+   rename(percent = `The smaller is approximately ___% of the larger...`) 
+
+mydf3 <- mydf2 |>  mutate(percent = parse_number(as.character(percent)))
+
+mydf4 <- mydf3 |> filter(!is.na(percent))
+
+mydf4 |>
+  ggplot(mapping=aes(x= factor(chart_type), y=percent, fill=factor(chart_type)))+
+         geom_boxplot()
+
+
+
 ```
 
 ------------------------------------------------------------------------
@@ -85,7 +107,44 @@ This method uses the idea that (after `Timestamp`) the remaining columns are the
 **Task E:** Make the same **box plot** of `percent` by `chart_type`.
 
 ```{r}
-# YOUR CODE HERE
+
+#to not confuse other sections, rename before editing:
+q4df <- raw
+
+#task A and B: 
+old_names <- names(q4df)
+
+qa_cols <- grep("Which item is SMALLER", old_names)
+qb_cols <- grep("approximately", old_names)
+
+old_names[qa_cols] <- paste0("QA", 1:length(qa_cols))
+old_names[qb_cols] <- paste0("QB", 1:length(qb_cols))
+
+names(q4df) <- old_names 
+
+#task D
+
+tidy_q4df <- q4df|>
+  pivot_longer(
+  cols = -Timestamp,
+  names_to = c(".value","chart_type"),
+  names_pattern = "(.*?)(\\d+)"
+  )
+View(tidy_q4df)
+
+final_q4df <- tidy_q4df |>
+  rename(percent = QB)
+final_q4df <- final_q4df |>
+  mutate(percent = parse_number(as.character(percent)))
+View(final_q4df)
+
+#plot!
+
+final_q4df |>
+  ggplot(mapping=aes(x= factor(chart_type), y=percent, fill=factor(chart_type)))+
+         geom_boxplot()
+
+
 ```
 
 ------------------------------------------------------------------------
@@ -97,5 +156,7 @@ This method uses the idea that (after `Timestamp`) the remaining columns are the
 **Task B:** In 3–6 sentences, comment on what the box plots show. Does it give the same gist that we would expect from Heer and Bostock's results? If not, why not?
 
 ```{r}
-# YOUR CODE HERE
+
 ```
+
+These do show the same information but Q3 is much easier to identify the results. I believe the biggest reason for thisis that the order of solving the second method (Q3) made it easier to assign the correct chart types to question numbers, and then keep them in order. There are edits that could be made to Q2, but the fact that Q3 was able to reach the best format the easiest shows that this is the correct method, at least for me personally. These show that different chart types lead to a broad range of accuracy levels in the reader actually properly understanding the data presented!
